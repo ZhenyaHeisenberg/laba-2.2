@@ -1,60 +1,83 @@
-from pathlib import Path
-from typing import List, Any, Optional
-from collections.abc import Iterable
-
-import typer
-from typer import Typer
-
-
-from src.inbox.core import InboxApp
-import tempfile
-from src.sources.repository import REGISTRY
-from src.contracts.message_source import MessageSource
-from src.contracts.message import Message
-
+# tests/test_task.py
+import pytest
+from src.models.descriptors import (
+    IdDescriptor,
+    DescriptionDescriptor,
+    PriorityDescriptor,
+    StatusDescriptor,
+    CreationTimeDescriptor
+)
+from src.models.task import Task
+from datetime import datetime
+from time import sleep
 
 
 
+def test_IdDescriptor():
+    class TestClass():
+        id = IdDescriptor()
+    obj = TestClass()
+    obj.id = "test-123"
+    assert obj.id == "test-123"
+    with pytest.raises(ValueError):
+        obj.id = "new-id"
 
-
-def test_build_stdin_source():
-    source = (REGISTRY["stdin"]())
+def test_DescriptionDescriptor():
+    class TestClass():
+        description = DescriptionDescriptor()
+    obj = TestClass()
+    obj.description = "test-description"
+    assert obj.description == "test-description"
     
-    assert isinstance(source, MessageSource)
+    obj.description = "new-test-description"
+    assert obj.description == "new-test-description"
+
+def test_PriorityDescriptor():
+    class TestClass():
+        priority = PriorityDescriptor()
+    obj = TestClass()
+    obj.priority = 1
+    assert obj.priority == 1
     
-    assert hasattr(source, 'name')
-    assert hasattr(source, 'fetch')
-
-
-
-def test_build_jsonl_source():
-    with tempfile.NamedTemporaryFile(mode='w', suffix='.jsonl', delete=False) as f:
-        f.write('{"id": "1", "title": "Test", "author": "Author", "content": "Message"}\n')
-        temp_path = Path(f.name)
+    obj.priority = 3
+    assert obj.priority == 3
     
-    try:
-        source = REGISTRY["file-jsonl"](path=temp_path)
-        
-        assert isinstance(source, MessageSource)
-        
-        messages = list(source.fetch())
-        assert len(messages) == 1
-        assert messages[0].id == "1"
-        
-        
-    finally:
-        temp_path.unlink()
-
-
-def test_build_api_source():
-    api_count = 5
-    source = REGISTRY["api"](count=api_count)
+    with pytest.raises(TypeError):
+        obj.priority = "string"
+        assert obj.priority == 3
     
-    assert isinstance(source, MessageSource)
+    with pytest.raises(ValueError):
+        obj.priority = 7
+        assert obj.priority == 3
+
+def test_StatusDescriptor():
+    class TestClass():
+        status = StatusDescriptor()
+    obj = TestClass()
+    obj.status = "В процессе"
+    assert obj.status == "В процессе"
     
-    assert hasattr(source, 'name')
-    assert hasattr(source, 'fetch')
+    obj.status = "Готово"
+    assert obj.status == "Готово"
+
+def test_CreationTimeDescriptor():
+    class TestClass():
+        creationTime = CreationTimeDescriptor()
+    obj = TestClass()
+    time = datetime.now()
+    assert (time - obj.creationTime).total_seconds() < 0.01
 
 
-    messages = list(source.fetch())
-    assert len(messages) == api_count
+def test_Task():
+    task = Task("123456", "Описание", 5, "В процессе")
+    assert task.id == "123456"
+    assert task.description == "Описание"
+    assert task.priority == 5
+    assert task.status == "В процессе"
+    assert task.is_ready == 0.0
+    
+    assert task.is_ready == False
+    
+    task.status = "ready"
+    time = datetime.now()
+    assert ( (time - task.creationTime).total_seconds() / 60 - task.time_in_queue ) < 0.001

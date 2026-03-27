@@ -1,7 +1,9 @@
-from src.models.logger import logger
+import logging
+logger = logging.getLogger(__name__)
+
 from typing import Any, Type
 from datetime import datetime
-from src.constants import PRIORITIES, READY
+from src.constants import PRIORITIES
 
 def validate_string_field(name: str, instance: Any, value: Any, max_length: int) -> None:
     """
@@ -68,7 +70,7 @@ class IdDescriptor(SampleDescriptor):
 
 
 class DescriptionDescriptor(SampleDescriptor):
-    """DATA: Валидирует данные, запрещает изменение"""
+    """DATA: Валидирует данные, разрешает изменение"""
     def __set__(self, instance: Any, value: str) -> None:
         """Устанавливает значение атрибута"""
 
@@ -111,7 +113,7 @@ class StatusDescriptor(SampleDescriptor):
 
 class CreationTimeDescriptor(SampleDescriptor):
     """NON-DATA, допускает только обращение"""
-    def __get__(self, instance: Any, owner: Type | None = None) -> datetime | "CreationTimeDescriptor":
+    def __get__(self, instance: Any, owner: Type | None = None) -> datetime:
         if instance is None:
             return self
         

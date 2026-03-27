@@ -24,4 +24,4 @@ class Task:
     def time_in_queue(self) -> float:
         if self.status.lower() not in READY:
             return 0.0
-        return (datetime.now() - self.creationTime).total_seconds() / 60
+        return abs((datetime.now() - self.creationTime).total_seconds() / 60)
